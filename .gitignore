@@ -1,0 +1,4 @@
+.env
+__pycache__/
+uploaded_pdfs/
+.DS_Store
