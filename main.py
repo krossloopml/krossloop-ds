@@ -15,6 +15,7 @@ load_dotenv()
 # Access the variables using os.getenv
 # api_key = os.getenv("GEMINI_API_KEY")
 vertexai_credentials = json.loads(os.getenv("VERTEX_AI_JSON_CREDENTIALS"))
+print(vertexai_credentials)
 
 credentials = service_account.Credentials.from_service_account_info(vertexai_credentials)
 
@@ -104,7 +105,7 @@ def process(data_source_pdf_path, model_name = "gemini-1.5-pro"):
         base64_string = create_base64(data_source_pdf_path)
         if not base64_string:
             print("Failed to create Base64 string. Exiting.")
-            return
+            return None
 
         # Prepare the document
         document1 = Part.from_data(
