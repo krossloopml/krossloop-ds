@@ -12,8 +12,8 @@ from prompts import SYSTEM_PROMPT
 # Load variables from the .env file
 load_dotenv()
 
+## MODEL SETTINGS ##
 # Access the variables using os.getenv
-# api_key = os.getenv("GEMINI_API_KEY")
 vertexai_credentials = os.getenv("VERTEX_AI_JSON_CREDENTIALS")
 vertexai_credentials = vertexai_credentials.replace("\n", "\\n")
 vertexai_credentials = json.loads(vertexai_credentials)
@@ -22,6 +22,44 @@ credentials = service_account.Credentials.from_service_account_info(vertexai_cre
 
 # Initialize Vertex AI
 vertexai.init(project = "adept-shade-444819-a4", location = "us-central1", credentials = credentials)
+
+# Generation configuration
+# generation_config = {
+#     "max_output_tokens": 8192,
+#     "temperature": 0.5,
+#     "top_p": 0.95,
+#     "top_k": 40,
+#     "seed": 50,
+# }
+generation_config = {
+    "max_output_tokens": 8192,
+    "temperature": 0.1,
+    "top_p": 0.0,
+    "top_k": 1,
+    "seed": 50,
+}
+
+# Safety settings
+safety_settings = [
+    SafetySetting(
+        category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold=SafetySetting.HarmBlockThreshold.OFF
+    ),
+    SafetySetting(
+        category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold=SafetySetting.HarmBlockThreshold.OFF
+    ),
+    SafetySetting(
+        category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold=SafetySetting.HarmBlockThreshold.OFF
+    ),
+    SafetySetting(
+        category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold=SafetySetting.HarmBlockThreshold.OFF
+    ),
+]
+## MODEL SETTINGS ##
+
 
 def calculate_cost(input_tokens, output_tokens, model):
     # Define pricing
@@ -101,6 +139,7 @@ def process(data_source_pdf_path, model_name = "gemini-1.5-pro"):
 
     try:
         model = GenerativeModel(model_name)
+        # generation_config["top_k"] = 40 if "flash" in model_name else 64
 
         # Convert the file to Base64
         base64_string = create_base64(data_source_pdf_path)
@@ -109,50 +148,16 @@ def process(data_source_pdf_path, model_name = "gemini-1.5-pro"):
             return None
 
         # Prepare the document
-        document1 = Part.from_data(
+        data_source_document = Part.from_data(
             mime_type = "application/pdf",
             data = base64.b64decode(base64_string)
         )
 
-        # Generation configuration
-        # generation_config = {
-        #     "max_output_tokens": 8192,
-        #     "temperature": 0.5,
-        #     "top_p": 0.95,
-        #     "top_k": 40 if "flash" in model_name else 64,
-        #     "seed": 50,
-        # }
-        generation_config = {
-            "max_output_tokens": 8192,
-            "temperature": 0.1,
-            "top_p": 0.0,
-            "top_k": 1,
-            "seed": 50,
-        }
-
-        # Safety settings
-        safety_settings = [
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                threshold=SafetySetting.HarmBlockThreshold.OFF
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF
-            ),
-        ]
+        chat = model.start_chat()
 
         print("Analysing data source document....")
-        analysis_recommendation_response = model.generate_content(
-            [document1, SYSTEM_PROMPT],
+        analysis_recommendation_response = chat.send_message(
+            [data_source_document, SYSTEM_PROMPT],
             generation_config = generation_config,
             safety_settings = safety_settings,
         )
