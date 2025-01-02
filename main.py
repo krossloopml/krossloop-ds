@@ -14,8 +14,9 @@ load_dotenv()
 
 # Access the variables using os.getenv
 # api_key = os.getenv("GEMINI_API_KEY")
-vertexai_credentials = json.loads(os.getenv("VERTEX_AI_JSON_CREDENTIALS"))
+vertexai_credentials = os.getenv("VERTEX_AI_JSON_CREDENTIALS")
 print(vertexai_credentials)
+vertexai_credentials = json.loads(vertexai_credentials)
 
 credentials = service_account.Credentials.from_service_account_info(vertexai_credentials)
 
