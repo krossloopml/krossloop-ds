@@ -33,7 +33,7 @@ vertexai.init(project = "adept-shade-444819-a4", location = "us-central1", crede
 # }
 generation_config = {
     "max_output_tokens": 8192,
-    "temperature": 0.1,
+    "temperature": 0.0,
     "top_p": 0.0,
     "top_k": 1,
     "seed": 50,
