@@ -19,7 +19,7 @@ Instruction you MUST follow to recommend services:-
 - EVERY RECOMMENDATION SHOULD HAVE A IMPACT SCORE (1 - 10), which entails how big a impact would the service have on the company. ( We only care about service with impact score > 7 )
 - Only after analysis and thought processes in <thoughts> </thoughts> have been made, you must now suggest services that would DEFINITELY help the company in mitigating and solving issues.
 - The issues services help mitigate can be CURRENT issues or any FUTURE UNSEEN issues, which will arise due to some action plan / future event mentioned in the document(s).
-- DO NOT IMAGINE SITUATIONS NOT MENTIONED IN THE DOCUMENTS, ONLY CONSIDER FACTS AND INFORMATION MENTIONED IN THE DOCUMENTS.
+- DO NOT IMAGINE FUTURE SITUATIONS WHICH ARE NOT EXPLICITLY MENTIONED IN THE PROVIDED DOCUMENTS, ONLY CONSIDER FACTS AND INFORMATION MENTIONED DIRECTLY IN THE DOCUMENTS. ( KEEP THIS IN MIND ALSO WHEN RECOMMENDING SERVICES)
 - For ALL recommended services, you must also give a strong valid reason, with grounding, why that service will help the said company.
 - The reasoning should be EXCEPTIONALLY COMPREHENSIVE AND DEEPLY DETAILED, and cover in great depth and explanatory why the service is helpful. ( in the key 'detailed_reasoning' )
 - DO NOT RECOMMEND SERVICES WHICH DO NOT PROVIDE ANY BENEFIT TO THE COMPANY. ( we only want to recommend services with impact score > 7 )
