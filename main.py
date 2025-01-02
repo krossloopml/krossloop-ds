@@ -153,10 +153,15 @@ def process(data_source_pdf_path, model_name = "gemini-1.5-pro"):
             data = base64.b64decode(base64_string)
         )
 
-        chat = model.start_chat()
+        # chat = model.start_chat()
 
-        print("Analysing data source document....")
-        analysis_recommendation_response = chat.send_message(
+        # print("Analysing data source document....")
+        # analysis_recommendation_response = chat.send_message(
+        #     [data_source_document, SYSTEM_PROMPT],
+        #     generation_config = generation_config,
+        #     safety_settings = safety_settings,
+        # )
+        analysis_recommendation_response = model.generate_content(
             [data_source_document, SYSTEM_PROMPT],
             generation_config = generation_config,
             safety_settings = safety_settings,
