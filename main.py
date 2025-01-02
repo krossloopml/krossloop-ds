@@ -2,6 +2,10 @@ from dotenv import load_dotenv
 import os
 import time
 import google.generativeai as genai
+import base64, json
+import vertexai
+from vertexai.generative_models import GenerativeModel, Part, SafetySetting
+from google.oauth2 import service_account
 
 from prompts import SYSTEM_PROMPT
 
@@ -9,9 +13,13 @@ from prompts import SYSTEM_PROMPT
 load_dotenv()
 
 # Access the variables using os.getenv
-api_key = os.getenv("GEMINI_API_KEY")
+# api_key = os.getenv("GEMINI_API_KEY")
+vertexai_credentials = json.loads(os.getenv("VERTEX_AI_JSON_CREDENTIALS"))
 
-genai.configure(api_key = api_key)
+credentials = service_account.Credentials.from_service_account_info(vertexai_credentials)
+
+# Initialize Vertex AI
+vertexai.init(project = "adept-shade-444819-a4", location = "us-central1", credentials = credentials)
 
 def calculate_cost(input_tokens, output_tokens, model):
     # Define pricing
@@ -67,50 +75,87 @@ def wait_for_files_active(files):
         if file.state.name != "ACTIVE":
             raise Exception(f"File {file.name} failed to process")
 
+def create_base64(file_path):
+    """
+    Converts a file to a Base64-encoded string.
+
+    :param file_path: Path to the file to be encoded
+    :return: Base64-encoded string
+    """
+    try:
+        with open(file_path, "rb") as file:
+            # Read the file's binary content
+            file_content = file.read()
+            # Encode the binary content to Base64
+            base64_encoded = base64.b64encode(file_content).decode('utf-8')
+            return base64_encoded
+    except Exception as e:
+        print(f"Error encoding file to Base64: {e}")
+        return None
+
 def process(data_source_pdf_path, model_name = "gemini-1.5-pro"):
     total_cost = 0
     start_time = time.time()
 
-    # Create the model
-    generation_config = {
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "top_k": 40 if "flash" in model_name else 64,
-        "max_output_tokens": 8192,
-        "response_mime_type": "text/plain",
-    }
-
     try:
+        model = GenerativeModel(model_name)
 
-        model = genai.GenerativeModel(
-            model_name = model_name,
-            generation_config = generation_config,
-            system_instruction = SYSTEM_PROMPT,
+        # Convert the file to Base64
+        base64_string = create_base64(data_source_pdf_path)
+        if not base64_string:
+            print("Failed to create Base64 string. Exiting.")
+            return
+
+        # Prepare the document
+        document1 = Part.from_data(
+            mime_type = "application/pdf",
+            data = base64.b64decode(base64_string)
         )
 
-        # You may need to update the file paths
-        files = [
-            upload_to_gemini(data_source_pdf_path, mime_type = "application/pdf"),
+        # Generation configuration
+        # generation_config = {
+        #     "max_output_tokens": 8192,
+        #     "temperature": 0.5,
+        #     "top_p": 0.95,
+        #     "top_k": 40 if "flash" in model_name else 64,
+        #     "seed": 50,
+        # }
+        generation_config = {
+            "max_output_tokens": 8192,
+            "temperature": 0.0,
+            "top_p": 0.0,
+            "top_k": 1,
+            "seed": 50,
+        }
+
+        # Safety settings
+        safety_settings = [
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=SafetySetting.HarmBlockThreshold.OFF
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF
+            ),
         ]
 
-        # Some files have a processing delay. Wait for them to be ready.
-        wait_for_files_active(files)
-
-        chat_session = model.start_chat(
-            history = [
-                {
-                    "role": "user",
-                    "parts": [
-                        files[0],
-                    ],
-                },
-            ]
-        )
-
         print("Analysing data source document....")
-        analysis_recommendation_response = chat_session.send_message("Analyse and recommend")
+        analysis_recommendation_response = model.generate_content(
+            [document1, SYSTEM_PROMPT],
+            generation_config = generation_config,
+            safety_settings = safety_settings,
+        )
         total_cost += calculate_cost(analysis_recommendation_response.usage_metadata.prompt_token_count, analysis_recommendation_response.usage_metadata.candidates_token_count, model_name)
-        analysis_recommendation_response = analysis_recommendation_response.text
+        analysis_recommendation_response = analysis_recommendation_response.candidates[0].content.parts[0].text
         print("Analysed data source document.")
 
         # delete the files from local system
